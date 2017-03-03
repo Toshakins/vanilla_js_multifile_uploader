@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Form</title>
+</head>
+<body>
+<form id="superForm" action="/" method="post" enctype="multipart/form-data">
+    <label for="txt">Text</label><input id="txt" name="txt" type="text">
+    <label for="doc">File</label><input id="doc" name="doc" type="file" multiple>
+    <input type="submit">
+</form>
+
+<script>
+    var uploadInput = function UploadInput(elem) {
+        var domElem;
+        var fileContainer = {};
+        var that = this;
+        var fileDocumentList = document.createElement('div');
+        return {
+            init: function Init() {
+                domElem = document.querySelector(elem);
+                if (!domElem) {
+                    console.error('lol, no such elem');
+                    return
+                }
+                domElem.parentNode.insertBefore(fileDocumentList, domElem.nextSibling);
+                domElem.addEventListener('change', this.onFilesAdd);
+                fileDocumentList.addEventListener('click', this.onFileDelete)
+            },
+            onFilesAdd: function OnFilesAdd(e) {
+                var eventFiles = this.files;
+                var i = 0;
+                for (i; i < eventFiles.length; ++i) {
+                    fileContainer[eventFiles.item(i).name] = eventFiles.item(i);
+                    var newFileRecord = document.createElement('div');
+                    newFileRecord.className = 'file-record';
+                    newFileRecord.dataset.name = eventFiles.item(i).name;
+                    newFileRecord.innerHTML =  eventFiles.item(i).name + ' <span class="file-remove">x</span>';
+
+                    fileDocumentList.appendChild(newFileRecord);
+                }
+            },
+            onFileDelete: function OnFileDelete(e) {
+                if (e.target.className != 'file-remove') {
+                    return;
+                }
+                delete fileContainer[e.target.parentNode.dataset.name];
+                e.target.parentNode.remove();
+            },
+            getFileList: function GetFileList() {
+                var fileList = [];
+                Object.keys(fileContainer).forEach(function makeFileList(key) {
+                    fileList.push(fileContainer[key]);
+                });
+                return fileList;
+            }
+        };
+    };
+
+    var uploadControl = uploadInput('#doc');
+    uploadControl.init();
+    document.getElementById('superForm').addEventListener('submit', function onFormSubmit(e) {
+        e.preventDefault();
+        var xhrForm = new FormData(this);
+        xhrForm.delete('doc');
+        var i = 0;
+        var xhrFileList = uploadControl.getFileList();
+        for (; i < xhrFileList.length; ++i) {
+            xhrForm.append('doc', xhrFileList[i]);
+        }
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/', true);
+        xhr.onreadystatechange = function onXHRReadyStateChange() {
+            if (xhr.readyState == 4 && xhr.status == 200) {
+                console.log('XHRed nice!');
+                return
+            }
+            console.error('xhr error :(')
+        };
+        xhr.send(xhrForm);
+    })
+
+</script>
+
+</body>
+</html>
